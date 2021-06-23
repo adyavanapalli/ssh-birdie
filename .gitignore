@@ -1,0 +1,5 @@
+.git
+.vscode
+bin/*
+obj/*
+!.do_not_delete
