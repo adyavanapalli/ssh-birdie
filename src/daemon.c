@@ -83,8 +83,8 @@ void close_open_file_descriptors()
     }
 
     for (long fd = 0; fd < max_fd &&
-                      // We do not close stderr just yet in case we need
-                      // to print an error to it.
+                      // We do not close stderr just yet in case we need to
+                      // print an error to it.
                       fd != stderr->_fileno; fd++)
     {
         if (close(fd) == -1)
