@@ -1,6 +1,6 @@
 # ssh-birdie
 
-_🐦 A little birdie told me \<@adyavanapalli\> (SSH'd into | disconnected from) the server 🐦._
+_`🐦 A little birdie told me <adyavanapalli> [opened|closed] a connection with the server 🐦.`_
 
 ## Purpose
 
