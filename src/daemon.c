@@ -10,7 +10,11 @@
 #include <unistd.h>
 
 #include "daemon.h"
+#include "logger.h"
 
+
+#define SUCCESSFUL_EXIT_STATUS "Exiting process with successful exit status."
+#define FAILING_EXIT_STATUS "Exiting process with failing exit status."
 
 /**
  * Forks the current process and exits, leaving the child process to return.
@@ -20,25 +24,31 @@ void make_child()
     pid_t fork_result = fork();
     if (fork_result > 0)
     {
+        log_info("fork() returned > 0. " SUCCESSFUL_EXIT_STATUS);
+
         // We exit from the parent process.
         exit(EXIT_SUCCESS);
     }
     else if (fork_result == -1)
     {
         // And log any errors and exit by failing.
-        fprintf(stderr, "error: %s\n", strerror(errno));
+        log_error("fork() returned -1. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
     else if (fork_result == 0)
     {
         // The child should not exit, but simply return.
+        log_info("Returning from child process.");
+
         return;
     }
     else // fork_result < -1
     {
         // For completeness, we exit failing here even though fork() will never
         // return anything less than -1.
+        log_error("fork() returned (exceptional) < -1. " FAILING_EXIT_STATUS);
+
         exit(EXIT_FAILURE);
     }
 }
@@ -50,7 +60,7 @@ void create_new_session()
 {
     if (setsid() == -1)
     {
-        fprintf(stderr, "error: %s\n", strerror(errno));
+        log_error("sedsid() returned -1. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -63,7 +73,7 @@ void change_to_root_directory()
 {
     if (chdir("/") == -1)
     {
-        fprintf(stderr, "error: %s\n", strerror(errno));
+        log_error("chdir(\"/\") returned -1. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -77,7 +87,7 @@ void close_open_file_descriptors()
     long max_fd = 0;
     if ((max_fd = sysconf(_SC_OPEN_MAX)) == -1)
     {
-        fprintf(stderr, "error: %s\n", strerror(errno));
+        log_error("sysconf(_SC_OPEN_MAX) returned -1. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -89,7 +99,7 @@ void close_open_file_descriptors()
     {
         if (close(fd) == -1)
         {
-            fprintf(stderr, "error: %s\n", strerror(errno));
+            log_error("close(fd) returned -1. " FAILING_EXIT_STATUS);
 
             exit(EXIT_FAILURE);
         }
@@ -98,7 +108,7 @@ void close_open_file_descriptors()
     // But now we close it.
     if (fclose(stderr) != 0)
     {
-        fprintf(stderr, "error: %s\n", strerror(errno));
+        log_error("close(stderr) returned != 0. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -111,21 +121,21 @@ void redirect_std_to_dev_null()
 {
     if (open("/dev/null", O_RDWR) != STDIN_FILENO)
     {
-        // TODO: We should log this to the system log.
+        log_error("open(\"/dev/null\", O_RDWR) != STDIN_FILENO. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
 
     if (open("/dev/null", O_RDWR) != STDOUT_FILENO)
     {
-        // TODO: We should log this to the system log.
+        log_error("open(\"/dev/null\", O_RDWR) != STDOUT_FILENO. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
 
     if (open("/dev/null", O_RDWR) != STDERR_FILENO)
     {
-        // TODO: We should log this to the system log.
+        log_error("open(\"/dev/null\", O_RDWR) != STDERR_FILENO. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -137,6 +147,8 @@ void redirect_std_to_dev_null()
  */
 void daemonize()
 {
+    log_info("Starting daemonize().");
+
     make_child();
 
     // We call setsid to create a new session and free it of any association
@@ -149,7 +161,8 @@ void daemonize()
     make_child();
 
     // We clear the file mode creation mask so that when the daemon creates any
-    // files, all users have access permissions to those files.
+    // files, all users have access permissions to those files. Note that this
+    // call always succeeds.
     umask(0);
 
     // Since the daemon is a long-running process, it will inevitably live until
@@ -165,4 +178,6 @@ void daemonize()
     // And finally, we redirect all data written to std* to /dev/null so that if
     // the daemon processes any I/O on those descriptors, it will not fail.
     redirect_std_to_dev_null();
+
+    log_info("Finished daemonize().");
 }
