@@ -6,6 +6,7 @@
 #include <curl/curl.h>
 
 #include "constants.h"
+#include "logger.h"
 #include "telegram_bot_api_client.h"
 
 
@@ -22,7 +23,7 @@ void send_ssh_session_notification(const char* username,
 {    
     if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK)
     {
-        // TODO: We should log this to the system log.
+        log_error("curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -30,7 +31,7 @@ void send_ssh_session_notification(const char* username,
     CURL* curl_ptr = NULL;
     if ((curl_ptr = curl_easy_init()) == NULL)
     {
-        // TODO: We should log this to the system log.
+        log_error("(curl_ptr = curl_easy_init()) == NULL. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -38,14 +39,14 @@ void send_ssh_session_notification(const char* username,
     FILE* f_ptr = NULL;
     if ((f_ptr = fopen("/dev/null", "w")) == NULL)
     {
-        // TODO: We should log this to the system log.
+        log_error("(f_ptr = fopen(\"/dev/null\", \"w\")) == NULL. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
 
     if (curl_easy_setopt(curl_ptr, CURLOPT_WRITEDATA, (void*)f_ptr) != CURLE_OK)
     {
-        // TODO: We should log this to the system log.
+        log_error("curl_easy_setopt(curl_ptr, CURLOPT_WRITEDATA, (void*)f_ptr) != CURLE_OK. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -61,7 +62,7 @@ void send_ssh_session_notification(const char* username,
                 username,
                 session_state) < 0)
     {
-        // TODO: We should log this to the system log.
+        log_error("sprintf(text, SSH_SESSION_NOTIFICATION_TEMPLATE, username, session_state) < 0. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -69,7 +70,7 @@ void send_ssh_session_notification(const char* username,
     char* escaped_text = NULL;
     if ((escaped_text = curl_easy_escape(curl_ptr, text, 0)) == NULL)
     {
-        // TODO: We should log this to the system log.
+        log_error("(escaped_text = curl_easy_escape(curl_ptr, text, 0)) == NULL. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -77,7 +78,7 @@ void send_ssh_session_notification(const char* username,
     char* token = NULL;
     if ((token = getenv(TELEGRAM_BOT_API_TOKEN_NAME)) == NULL)
     {
-        // TODO: We should log this to the system log.
+        log_error("(token = getenv(TELEGRAM_BOT_API_TOKEN_NAME)) == NULL. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -85,7 +86,7 @@ void send_ssh_session_notification(const char* username,
     char* chat_id = NULL;
     if ((chat_id = getenv(TELEGRAM_BOT_API_CHAT_ID_NAME)) == NULL)
     {
-        // TODO: We should log this to the system log.
+        log_error("(chat_id = getenv(TELEGRAM_BOT_API_CHAT_ID_NAME)) == NULL. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
@@ -96,41 +97,35 @@ void send_ssh_session_notification(const char* username,
                 chat_id,
                 escaped_text) < 0)
     {
-        // TODO: We should log this to the system log.
+        log_error("sprintf(get_url, TELEGRAM_BOT_API_SEND_MESSAGE_TEMPLATE, token, chat_id, escaped_text) < 0. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
     
     curl_free(escaped_text);
 
-    // NOTE: We leave this commented out code for future debugging purposes.
-    // if (curl_easy_setopt(curl_ptr, CURLOPT_VERBOSE, 1L) != CURLE_OK)
-    // {
-    //     // TODO: We should log this to the system log.
-
-    //     exit(EXIT_FAILURE);
-    // }
-
     if (curl_easy_setopt(curl_ptr, CURLOPT_URL, get_url) != CURLE_OK)
     {
-        // TODO: We should log this to the system log.
+        log_error("curl_easy_setopt(curl_ptr, CURLOPT_URL, get_url) != CURLE_OK. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
 
     if (curl_easy_perform(curl_ptr) != CURLE_OK)
     {
-        // TODO: We should log this to the system log.
+        log_error("curl_easy_perform(curl_ptr) != CURLE_OK. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
 
     if (fclose(f_ptr) != 0)
     {
-        // TODO: We should log this to the system log.
+        log_error("fclose(f_ptr) != 0. " FAILING_EXIT_STATUS);
 
         exit(EXIT_FAILURE);
     }
 
     curl_easy_cleanup(curl_ptr);
+
+    log_info("Sent SSH session notification to Telegram.");
 }
