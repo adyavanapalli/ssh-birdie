@@ -111,16 +111,22 @@ void redirect_std_to_dev_null()
 {
     if (open("/dev/null", O_RDWR) != STDIN_FILENO)
     {
+        // TODO: We should log this to the system log.
+
         exit(EXIT_FAILURE);
     }
 
     if (open("/dev/null", O_RDWR) != STDOUT_FILENO)
     {
+        // TODO: We should log this to the system log.
+
         exit(EXIT_FAILURE);
     }
 
     if (open("/dev/null", O_RDWR) != STDERR_FILENO)
     {
+        // TODO: We should log this to the system log.
+
         exit(EXIT_FAILURE);
     }
 }

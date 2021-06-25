@@ -1,22 +1,149 @@
 // ssh-birdie.c
 
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
+#endif
+
+#include <regex.h>
+#include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 
+#include <systemd/sd-journal.h>
+
+#include "constants.h"
 #include "daemon.h"
+#include "telegram_bot_api_client.h"
+
+
+// void write_log_entry(const char* message)
+// {
+//     FILE* f_ptr = fopen("/home/adyavanapalli/Downloads/ssh-birdie.log", "a");
+
+//     fwrite(message, strlen(message), sizeof(char), f_ptr);
+
+//     fclose(f_ptr);
+// }
+
+sd_journal* open_journal_to_sshd_at_current_time()
+{
+    sd_journal* sd_journal_ptr = NULL;
+    sd_journal_open(&sd_journal_ptr, SD_JOURNAL_SYSTEM);
+
+    struct timespec ts = { .tv_sec = 0L, .tv_nsec = 0L };
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    uint64_t usec = SECONDS_TO_MICROSECONDS(ts.tv_sec) +
+                    NANOSECONDS_TO_MICROSECONDS(ts.tv_nsec);
+    sd_journal_seek_realtime_usec(sd_journal_ptr, usec);
+
+    sd_journal_add_match(sd_journal_ptr,
+                         SSHD_PROCESS_NAME,
+                         0);
+    
+    return sd_journal_ptr;
+}
+
+static bool was_sigint_caught = false;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+void signal_handler(int signum, siginfo_t* siginfo_ptr, void* unused_ptr)
+{
+    was_sigint_caught = true;
+}
+#pragma GCC diagnostic pop
 
 int main()
 {
     daemonize();
 
-    while (true)
+    struct sigaction action =
     {
-        // The brunt of the logic should live here i.e. the bits that check the
-        // system log and report the results to Telegram. After each check, the
-        // daemon should sleep for one second.
+        .sa_flags = SA_SIGINFO,
+        .sa_sigaction = signal_handler
+    };
+
+    sigemptyset(&action.sa_mask);
+
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
+
+    sd_journal* sd_journal_ptr = open_journal_to_sshd_at_current_time();
+
+    regex_t regex;
+    memset(&regex, 0, sizeof(regex_t));
+
+    regcomp(&regex,
+            SSHD_SESSION_JOURNAL_ENTRY_PATTERN,
+            REG_EXTENDED);
+
+    while (!was_sigint_caught)
+    {
+        while (sd_journal_next(sd_journal_ptr) == 1)
+        {
+            const char *message = NULL;
+            size_t message_length = 0;
+
+            sd_journal_get_data(sd_journal_ptr,
+                                USER_JOURNAL_FIELD_MESSAGE,
+                                (const void **)&message,
+                                &message_length);
+
+            regmatch_t matches[3] =
+            {
+                // The first match should match the entire string.
+                { .rm_so = 0, .rm_eo = 0 },
+
+                // The second match should match either `opened` or `closed`.
+                { .rm_so = 0, .rm_eo = 0 },
+
+                // The third match should match the username of the user.
+                { .rm_so = 0, .rm_eo = 0 }
+
+                // There is also another match, but since we do not care about
+                // its value, we do not allocate a regmatch_t for it.
+            };
+
+            regexec(&regex,
+                    message,
+                    sizeof(matches) / sizeof(regmatch_t),
+                    matches,
+                    0);
+
+            // If we find a match, the first match will be the entire string, so
+            // its end offset should be positive.
+            if (matches[0].rm_eo > 0)
+            {
+                char username[BUFSIZ];
+                memset(username, 0, BUFSIZ * sizeof(char));
+
+                char session_state[BUFSIZ];
+                memset(session_state, 0, BUFSIZ * sizeof(char));
+
+                sprintf(username,
+                        "%.*s",
+                        matches[2].rm_eo - matches[2].rm_so,
+                        message + matches[2].rm_so);
+
+                sprintf(session_state,
+                        "%.*s",
+                        matches[1].rm_eo - matches[1].rm_so,
+                        message + matches[1].rm_so);
+
+                send_ssh_session_notification(username, session_state);
+            }
+        }
 
         sleep(1);
     }
+
+    sd_journal_close(sd_journal_ptr);
+
+    regfree(&regex);
 
     return 0;
 }
