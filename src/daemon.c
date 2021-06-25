@@ -13,9 +13,6 @@
 #include "logger.h"
 
 
-#define SUCCESSFUL_EXIT_STATUS "Exiting process with successful exit status."
-#define FAILING_EXIT_STATUS "Exiting process with failing exit status."
-
 /**
  * Forks the current process and exits, leaving the child process to return.
  */
@@ -147,8 +144,6 @@ void redirect_std_to_dev_null()
  */
 void daemonize()
 {
-    log_info("Starting daemonize().");
-
     make_child();
 
     // We call setsid to create a new session and free it of any association
@@ -179,5 +174,5 @@ void daemonize()
     // the daemon processes any I/O on those descriptors, it will not fail.
     redirect_std_to_dev_null();
 
-    log_info("Finished daemonize().");
+    log_info("The program was successfully daemonized.");
 }
