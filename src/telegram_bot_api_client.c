@@ -126,6 +126,4 @@ void send_ssh_session_notification(const char* username,
     }
 
     curl_easy_cleanup(curl_ptr);
-
-    log_info("Sent SSH session notification to Telegram.");
 }

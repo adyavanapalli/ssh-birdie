@@ -173,6 +173,4 @@ void daemonize()
     // And finally, we redirect all data written to std* to /dev/null so that if
     // the daemon processes any I/O on those descriptors, it will not fail.
     redirect_std_to_dev_null();
-
-    log_info("The program was successfully daemonized.");
 }

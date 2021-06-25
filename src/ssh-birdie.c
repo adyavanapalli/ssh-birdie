@@ -16,18 +16,15 @@
 
 #include "constants.h"
 #include "daemon.h"
+#include "logger.h"
 #include "telegram_bot_api_client.h"
 
-
-// void write_log_entry(const char* message)
-// {
-//     FILE* f_ptr = fopen("/home/adyavanapalli/Downloads/ssh-birdie.log", "a");
-
-//     fwrite(message, strlen(message), sizeof(char), f_ptr);
-
-//     fclose(f_ptr);
-// }
-
+/**
+ * Opens the system journal filtered to the sshd identifier and messages
+ * originating from now on.
+ * 
+ * @returns A pointer to a sd_journal struct.
+ */
 sd_journal* open_journal_to_sshd_at_current_time()
 {
     sd_journal* sd_journal_ptr = NULL;
@@ -43,24 +40,38 @@ sd_journal* open_journal_to_sshd_at_current_time()
     sd_journal_add_match(sd_journal_ptr,
                          SSHD_PROCESS_NAME,
                          0);
-    
+
     return sd_journal_ptr;
 }
 
-static bool was_sigint_caught = false;
+/**
+ * A flag indicating whether SIGINT or SIGTERM was caught. This is used to gate
+ * cleanup logic for this program.
+ */
+static bool was_sigint_or_sigterm_caught = false;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+/**
+ * A signal handler for catching SIGINT or SIGTERM.
+ * 
+ * @param signum        The value of the signal that was caught.
+ * @param siginfo_ptr   Information associated with the signal.
+ * @param unused_ptr    Unused.
+ */
 void signal_handler(int signum, siginfo_t* siginfo_ptr, void* unused_ptr)
 {
-    was_sigint_caught = true;
+    log_info("SIGINT/SIGTERM was caught.");
+
+    was_sigint_or_sigterm_caught = true;
 }
 #pragma GCC diagnostic pop
 
-int main()
+/**
+ * Sets up the signal handler for catching SIGINT and SIGTERM.
+ */
+void setup_signal_handler()
 {
-    daemonize();
-
     struct sigaction action =
     {
         .sa_flags = SA_SIGINFO,
@@ -71,8 +82,19 @@ int main()
 
     sigaction(SIGINT, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
+}
+
+int main()
+{
+    log_info("Started.");
+
+    daemonize();
+    log_info("The program was successfully daemonized.");
+
+    setup_signal_handler();
 
     sd_journal* sd_journal_ptr = open_journal_to_sshd_at_current_time();
+    log_info("Opened system journal to the sshd identifier.");
 
     regex_t regex;
     memset(&regex, 0, sizeof(regex_t));
@@ -81,7 +103,7 @@ int main()
             SSHD_SESSION_JOURNAL_ENTRY_PATTERN,
             REG_EXTENDED);
 
-    while (!was_sigint_caught)
+    while (!was_sigint_or_sigterm_caught)
     {
         while (sd_journal_next(sd_journal_ptr) == 1)
         {
@@ -118,6 +140,8 @@ int main()
             // its end offset should be positive.
             if (matches[0].rm_eo > 0)
             {
+                log_info("Found new SSH session state change.");
+
                 char username[BUFSIZ];
                 memset(username, 0, BUFSIZ * sizeof(char));
 
@@ -135,15 +159,20 @@ int main()
                         message + matches[1].rm_so);
 
                 send_ssh_session_notification(username, session_state);
+                log_info("Sent SSH session notification to Telegram.");
             }
         }
 
         sleep(1);
     }
 
+    log_info("Cleaning up.");
+
     sd_journal_close(sd_journal_ptr);
 
     regfree(&regex);
+
+    log_info("Stopped.");
 
     return 0;
 }
