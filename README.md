@@ -1,5 +1,7 @@
 # ssh-birdie
 
+[![CI](https://github.com/adyavanapalli/ssh-birdie/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/adyavanapalli/ssh-birdie/actions/workflows/ci.yml)
+
 ![A screenshot of the daemon in the wild.](docs/screenshot.png)
 
 ## Purpose
