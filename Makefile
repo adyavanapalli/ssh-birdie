@@ -1,9 +1,9 @@
 CC=gcc
 CCFLAGS=-Wall -Wextra -Wpedantic
-HEADER=include/constants.h include/daemon.h include/telegram_bot_api_client.h include/logger.h
+HEADER=include/constants.h include/daemon.h include/telegram-bot-api-client.h include/logger.h
 INCLUDE=-I include/
 LDFLAGS=-lsystemd -lcurl
-OBJ=obj/daemon.o obj/telegram_bot_api_client.o obj/logger.o
+OBJ=obj/daemon.o obj/telegram-bot-api-client.o obj/logger.o
 OPT=-O3
 
 all: bin/ssh-birdie
@@ -14,8 +14,8 @@ bin/ssh-birdie: src/ssh-birdie.c $(HEADER) $(OBJ)
 obj/daemon.o: src/daemon.c $(HEADER)
 	$(CC) $(CCFLAGS) $(INCLUDE) $(OPT) -c src/daemon.c -o obj/daemon.o
 
-obj/telegram_bot_api_client.o: src/telegram_bot_api_client.c $(HEADER)
-	$(CC) $(CCFLAGS) $(INCLUDE) $(OPT) -c src/telegram_bot_api_client.c -o obj/telegram_bot_api_client.o -lcurl
+obj/telegram-bot-api-client.o: src/telegram-bot-api-client.c $(HEADER)
+	$(CC) $(CCFLAGS) $(INCLUDE) $(OPT) -c src/telegram-bot-api-client.c -o obj/telegram-bot-api-client.o -lcurl
 
 obj/logger.o: src/logger.c $(HEADER)
 	$(CC) $(CCFLAGS) $(INCLUDE) $(OPT) -c src/logger.c -o obj/logger.o

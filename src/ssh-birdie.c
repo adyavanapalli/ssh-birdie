@@ -17,7 +17,7 @@
 #include "constants.h"
 #include "daemon.h"
 #include "logger.h"
-#include "telegram_bot_api_client.h"
+#include "telegram-bot-api-client.h"
 
 /**
  * Opens the system journal filtered to the sshd identifier and messages

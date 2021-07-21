@@ -1,4 +1,4 @@
-// telegram_bot_api_client.h
+// telegram-bot-api-client.h
 
 #ifndef TELEGRAM_BOT_API_CLIENT_H
 #define TELEGRAM_BOT_API_CLIENT_H

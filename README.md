@@ -18,9 +18,9 @@ $ make
 
 # The output you should see:
 gcc -Wall -Wextra -Wpedantic -I include/ -O3 -c src/daemon.c -o obj/daemon.o
-gcc -Wall -Wextra -Wpedantic -I include/ -O3 -c src/telegram_bot_api_client.c -o obj/telegram_bot_api_client.o -lcurl
+gcc -Wall -Wextra -Wpedantic -I include/ -O3 -c src/telegram-bot-api-client.c -o obj/telegram-bot-api-client.o -lcurl
 gcc -Wall -Wextra -Wpedantic -I include/ -O3 -c src/logger.c -o obj/logger.o
-gcc -Wall -Wextra -Wpedantic -I include/ -O3 src/ssh-birdie.c -o bin/ssh-birdie obj/daemon.o obj/telegram_bot_api_client.o obj/logger.o -lsystemd -lcurl
+gcc -Wall -Wextra -Wpedantic -I include/ -O3 src/ssh-birdie.c -o bin/ssh-birdie obj/daemon.o obj/telegram-bot-api-client.o obj/logger.o -lsystemd -lcurl
 ```
 
 ## Configuration

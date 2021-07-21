@@ -1,4 +1,4 @@
-// telegram_bot_api_client.c
+// telegram-bot-api-client.c
 
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +7,7 @@
 
 #include "constants.h"
 #include "logger.h"
-#include "telegram_bot_api_client.h"
+#include "telegram-bot-api-client.h"
 
 
 /**
