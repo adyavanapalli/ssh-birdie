@@ -4,15 +4,20 @@ on:
   push:
     branches: [ main ]
 
+  workflow_dispatch:
+    
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Get Dependencies
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Install Dependencies
       run: |
         sudo apt-get --yes update
         sudo apt-get --yes install libsystemd-dev libcurl4-openssl-dev
+
     - name: Build Project
       run: make --jobs --always-make
